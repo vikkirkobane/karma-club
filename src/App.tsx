@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import KarmaClub from "./pages/KarmaClub";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import LevelProgression from "./pages/LevelProgression";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/karma-club" element={<KarmaClub />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/levels" element={<LevelProgression />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

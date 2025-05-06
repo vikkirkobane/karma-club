@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Activity, ActivityType, UserProgress } from "@/types/activities";
+import { Activity, ActivityType, UserProgress, KARMA_LEVELS } from "@/types/activities";
 import { toast } from "@/components/ui/use-toast";
 
 // This is a mock hook that would normally interact with a backend
@@ -17,7 +17,7 @@ export function useActivityProgress(userId: string) {
       setUserProgress({
         userId,
         level: 5,
-        tier: "Bronze",
+        tier: "Friend",
         points: 120,
         completedActivities: [
           "daily-1", 
@@ -29,7 +29,19 @@ export function useActivityProgress(userId: string) {
           "bronze-tier",
           "newcomer"
         ],
-        dailyStreak: 3
+        dailyStreak: 3,
+        
+        // New fields for the four categories
+        dailyActsCompleted: 6,
+        engagementCompleted: 10,
+        volunteeringCompleted: 3,
+        supportCompleted: 3,
+        
+        // Progress percentages
+        dailyProgress: 75,   // 6 out of 8 required for Friend level
+        engagementProgress: 62.5,  // 10 out of 16 required
+        volunteeringProgress: 75,  // 3 out of 4 required
+        supportProgress: 75   // 3 out of 4 required
       });
       setLoading(false);
     }, 1000);
@@ -67,41 +79,84 @@ export function useActivityProgress(userId: string) {
           const updatedCompletedActivities = [...prev.completedActivities, activity.id];
           const updatedPoints = prev.points + activity.points;
           
-          // Calculate new level (simplified)
-          const newLevel = Math.floor(updatedPoints / 25); // Every 25 points is a new level
+          // Determine activity type and update corresponding counter
+          let updatedDailyActsCompleted = prev.dailyActsCompleted;
+          let updatedEngagementCompleted = prev.engagementCompleted;
+          let updatedVolunteeringCompleted = prev.volunteeringCompleted;
+          let updatedSupportCompleted = prev.supportCompleted;
           
-          // Determine tier based on level
-          let newTier = prev.tier;
-          if (newLevel >= 15) newTier = "Platinum";
-          else if (newLevel >= 10) newTier = "Gold";
-          else if (newLevel >= 5) newTier = "Silver";
-          else newTier = "Bronze";
+          if (activity.id.startsWith('daily')) {
+            updatedDailyActsCompleted++;
+          } else if (activity.id.startsWith('engagement')) {
+            updatedEngagementCompleted++;
+          } else if (activity.id.startsWith('volunteer')) {
+            updatedVolunteeringCompleted++;
+          } else if (activity.id.startsWith('support')) {
+            updatedSupportCompleted++;
+          }
           
-          // Check for new badges (simplified logic)
+          // Find current level requirements
+          const currentLevelData = KARMA_LEVELS.find(level => level.level === prev.tier);
+          if (!currentLevelData) return prev;
+          
+          // Calculate new progress percentages
+          const dailyProgress = Math.min(100, (updatedDailyActsCompleted / currentLevelData.dailyRequirement) * 100);
+          const engagementProgress = Math.min(100, (updatedEngagementCompleted / currentLevelData.engagementRequirement) * 100);
+          const volunteeringProgress = Math.min(100, (updatedVolunteeringCompleted / currentLevelData.volunteeringRequirement) * 100);
+          const supportProgress = Math.min(100, (updatedSupportCompleted / currentLevelData.supportRequirement) * 100);
+          
+          // Check if eligible for next level
+          const currentLevelIndex = KARMA_LEVELS.findIndex(level => level.level === prev.tier);
+          let newLevel = prev.tier;
+          
+          if (currentLevelIndex < KARMA_LEVELS.length - 1) {
+            const nextLevelData = KARMA_LEVELS[currentLevelIndex + 1];
+            
+            // Check if all requirements are met
+            if (updatedDailyActsCompleted >= nextLevelData.dailyRequirement &&
+                updatedEngagementCompleted >= nextLevelData.engagementRequirement &&
+                updatedVolunteeringCompleted >= nextLevelData.volunteeringRequirement &&
+                updatedSupportCompleted >= nextLevelData.supportRequirement) {
+              newLevel = nextLevelData.level;
+              
+              // Show level up toast
+              toast({
+                title: "Level Up!",
+                description: `Congratulations! You've reached ${newLevel} level!`,
+                variant: "default",
+              });
+            }
+          }
+          
+          // Update badges (simplified logic)
           const updatedBadges = [...prev.badges];
           
-          // Add level tier badge if needed
-          if (newLevel >= 5 && !updatedBadges.includes("bronze-tier")) {
-            updatedBadges.push("bronze-tier");
-          }
-          if (newLevel >= 10 && !updatedBadges.includes("silver-tier")) {
-            updatedBadges.push("silver-tier");
+          // Check for level milestone badges
+          if (newLevel !== prev.tier && !updatedBadges.includes(`${newLevel.toLowerCase()}-tier`)) {
+            updatedBadges.push(`${newLevel.toLowerCase()}-tier`);
           }
           
           // Check for activity milestone badges
-          const activityCount = updatedCompletedActivities.length;
-          if (activityCount >= 10 && !updatedBadges.includes("activity-10")) {
+          const totalActivities = updatedCompletedActivities.length;
+          if (totalActivities >= 10 && !updatedBadges.includes("activity-10")) {
             updatedBadges.push("activity-10");
           }
           
           // Return updated progress
           return {
             ...prev,
-            level: newLevel,
-            tier: newTier,
+            tier: newLevel,
             points: updatedPoints,
             completedActivities: updatedCompletedActivities,
             badges: updatedBadges,
+            dailyActsCompleted: updatedDailyActsCompleted,
+            engagementCompleted: updatedEngagementCompleted,
+            volunteeringCompleted: updatedVolunteeringCompleted,
+            supportCompleted: updatedSupportCompleted,
+            dailyProgress,
+            engagementProgress,
+            volunteeringProgress,
+            supportProgress
           };
         });
         
@@ -125,11 +180,21 @@ export function useActivityProgress(userId: string) {
   };
   
   // Get progress percentage for a category
-  const getCategoryProgress = (type: ActivityType, totalActivities: number): number => {
+  const getCategoryProgress = (type: ActivityType): number => {
     if (!userProgress) return 0;
     
-    const completedInCategory = userProgress.completedActivities.filter(id => id.startsWith(type)).length;
-    return Math.min(100, Math.round((completedInCategory / totalActivities) * 100));
+    switch (type) {
+      case ActivityType.DAILY:
+        return userProgress.dailyProgress;
+      case ActivityType.ENGAGEMENT:
+        return userProgress.engagementProgress;
+      case ActivityType.VOLUNTEER:
+        return userProgress.volunteeringProgress;
+      case ActivityType.SUPPORT:
+        return userProgress.supportProgress;
+      default:
+        return 0;
+    }
   };
   
   return {
