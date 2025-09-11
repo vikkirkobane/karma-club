@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Activity, ActivityType } from "@/types/activities";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,7 @@ interface ActivityCardProps {
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) => {
+  const { user, updateUser } = useAuth();
   const [completed, setCompleted] = useState(activity.isCompleted);
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -66,11 +68,39 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
       return;
     }
 
-    // In a real app, this is where you'd submit the activity to the backend
+    if (!user) return;
+
+    // Update user stats based on activity type
+    const updatedStats = { ...user.stats };
+    let pointsEarned = activity.points;
+    
+    switch (type) {
+      case ActivityType.DAILY:
+        updatedStats.dailyCompleted += 1;
+        break;
+      case ActivityType.VOLUNTEER:
+        updatedStats.volunteerCompleted += 1;
+        break;
+      case ActivityType.ENGAGEMENT:
+        updatedStats.engagementCompleted += 1;
+        break;
+      case ActivityType.SUPPORT:
+        updatedStats.supportCompleted += 1;
+        break;
+    }
+    
+    updatedStats.totalActivities += 1;
+
+    // Update user with new stats and points
+    updateUser({
+      points: user.points + pointsEarned,
+      stats: updatedStats
+    });
+
     setCompleted(true);
     toast({
       title: "Activity Completed!",
-      description: `You earned 1 point for completing "${activity.title}"`,
+      description: `You earned ${pointsEarned} point${pointsEarned > 1 ? 's' : ''} for completing "${activity.title}"`,
     });
 
     // Clean up preview URL
