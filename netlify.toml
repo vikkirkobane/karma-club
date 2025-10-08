@@ -1,0 +1,12 @@
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+
+[build]
+  command = "npm run build:prod"
+  publish = "dist"
+  environment = { NODE_VERSION = "22" }
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

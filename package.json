@@ -21,12 +21,14 @@
     "build": "tsc && vite build",
     "build:dev": "vite build --mode development",
     "build:prod": "vite build --mode production",
+    "build:netlify": "npm ci && tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "preview": "vite preview --port 4173",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist node_modules/.vite",
-    "analyze": "npm run build && npx vite-bundle-analyzer dist"
+    "analyze": "npm run build && npx vite-bundle-analyzer dist",
+    "postinstall": "npm run type-check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
