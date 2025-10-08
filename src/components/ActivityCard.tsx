@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,10 @@ import { toast } from "@/components/ui/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { CheckCircle, Upload, Loader2, MoreVertical } from "lucide-react";
+import { storageService, UploadResult } from "@/lib/storage";
+import { ReportContent } from "@/components/ReportContent";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface ActivityCardProps {
   activity: Activity;
@@ -21,6 +24,8 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Different colors based on activity type
   const getBadgeColor = () => {
@@ -39,8 +44,18 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select a file smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setSelectedFile(file);
       
       // Create a preview URL
@@ -49,8 +64,44 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
     }
   };
 
-  const handleCompleteActivity = () => {
-    if (!description) {
+  const uploadFile = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+      
+      // Compress image if it's an image file
+      let fileToUpload = file;
+      if (file.type.startsWith('image/')) {
+        fileToUpload = await storageService.compressImage(file);
+      }
+      
+      // Upload to Supabase Storage
+      const result: UploadResult = await storageService.uploadActivityMedia(
+        fileToUpload, 
+        user.id, 
+        activity.id.toString()
+      );
+      
+      setUploadProgress(100);
+      return result.url;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload your file. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleCompleteActivity = async () => {
+    if (!description.trim()) {
       toast({
         title: "Description Required",
         description: "Please share what you did for this activity.",
@@ -59,20 +110,32 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
       return;
     }
 
-    if (!selectedFile) {
+    if (!user) {
       toast({
-        title: "Media Required",
-        description: "Please upload a photo or video of your activity.",
+        title: "Authentication Required",
+        description: "Please log in to complete activities.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!user) return;
+    let mediaUrl = null;
+    
+    // Upload file if selected
+    if (selectedFile) {
+      mediaUrl = await uploadFile(selectedFile);
+      if (!mediaUrl && selectedFile) {
+        // Upload failed but user selected a file, ask if they want to continue without it
+        const continueWithoutFile = window.confirm(
+          "File upload failed. Would you like to continue without the file?"
+        );
+        if (!continueWithoutFile) return;
+      }
+    }
 
     // Update user stats based on activity type
     const updatedStats = { ...user.stats };
-    let pointsEarned = activity.points;
+    const pointsEarned = activity.points;
     
     switch (type) {
       case ActivityType.DAILY:
@@ -97,16 +160,32 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
       stats: updatedStats
     });
 
+    // Store activity completion in database (for verification)
+    try {
+      await storageService.uploadActivityMedia(
+        selectedFile || new File([], 'placeholder.txt'),
+        user.id,
+        activity.id.toString()
+      );
+    } catch (error) {
+      console.error('Failed to record activity completion:', error);
+    }
+
     setCompleted(true);
     toast({
-      title: "Activity Completed!",
-      description: `You earned ${pointsEarned} point${pointsEarned > 1 ? 's' : ''} for completing "${activity.title}"`,
+      title: "Activity Completed! 🎉",
+      description: `You earned ${pointsEarned} point${pointsEarned > 1 ? 's' : ''} for "${activity.title}"`,
     });
 
     // Clean up preview URL
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
+    
+    // Reset form
+    setDescription("");
+    setSelectedFile(null);
+    setPreviewUrl(null);
   };
 
   return (
@@ -140,9 +219,32 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
         <div className="p-4">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold text-lg">{activity.title}</h3>
-            <Badge className={`${getBadgeColor()} text-xs`}>
-              {completed ? "Completed" : "1 Point"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={`${getBadgeColor()} text-xs`}>
+                {completed ? "Completed" : `${activity.points} Point${activity.points > 1 ? 's' : ''}`}
+              </Badge>
+              
+              {/* Report Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                  <ReportContent
+                    contentType="activity"
+                    contentId={activity.id.toString()}
+                    contentPreview={`${activity.title}: ${activity.description.substring(0, 100)}...`}
+                    trigger={
+                      <DropdownMenuItem className="text-red-400 hover:text-red-300 hover:bg-gray-700">
+                        Report Activity
+                      </DropdownMenuItem>
+                    }
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
           <p className="text-sm text-gray-300">{activity.description}</p>
         </div>
@@ -153,12 +255,24 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
           <SheetTrigger asChild>
             <Button 
               className={`w-full ${completed ? 'bg-gray-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-              disabled={completed}
+              disabled={completed || isUploading}
             >
-              {completed ? "Completed" : "Complete Activity"}
+              {isUploading ? (
+                <div className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uploading...
+                </div>
+              ) : completed ? (
+                <div className="flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Completed
+                </div>
+              ) : (
+                "Complete Activity"
+              )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="bg-gray-900 text-white border-t border-gray-700">
+          <SheetContent side="bottom" className="bg-gray-900 text-white border-t border-gray-700 max-h-[90vh] overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="text-white">{activity.title}</SheetTitle>
             </SheetHeader>
@@ -171,17 +285,20 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
                   className="bg-gray-800 border-gray-700"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  disabled={isUploading}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="media">Upload a photo or video</Label>
+                <Label htmlFor="media">Upload a photo or video (optional)</Label>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     onClick={() => document.getElementById('media')?.click()}
                     className="bg-gray-800 border-gray-700"
+                    disabled={isUploading}
                   >
+                    <Upload className="w-4 h-4 mr-2" />
                     Select File
                   </Button>
                   <input
@@ -190,27 +307,60 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
                     accept="image/*,video/*"
                     className="hidden"
                     onChange={handleFileChange}
+                    disabled={isUploading}
                   />
                   <span className="text-sm text-gray-400">
                     {selectedFile ? selectedFile.name : "No file selected"}
                   </span>
                 </div>
                 
-                {previewUrl && (
-                  <div className="mt-2">
-                    {selectedFile?.type.startsWith('image/') ? (
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="max-h-40 rounded"
-                      />
-                    ) : (
-                      <video
-                        src={previewUrl}
-                        controls
-                        className="max-h-40 rounded"
-                      />
+                {selectedFile && (
+                  <div className="mt-2 p-3 bg-gray-800 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{selectedFile.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setPreviewUrl(null);
+                        }}
+                        disabled={isUploading}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    {previewUrl && (
+                      <div className="mt-2">
+                        {selectedFile.type.startsWith('image/') ? (
+                          <img
+                            src={previewUrl}
+                            alt="Preview"
+                            className="max-h-40 rounded object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={previewUrl}
+                            controls
+                            className="max-h-40 rounded"
+                          />
+                        )}
+                      </div>
                     )}
+                  </div>
+                )}
+                
+                {isUploading && (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Uploading... {uploadProgress}%
+                    </p>
                   </div>
                 )}
               </div>
@@ -218,8 +368,16 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, type }) =>
               <Button 
                 className="w-full bg-emerald-600 hover:bg-emerald-700 mt-4"
                 onClick={handleCompleteActivity}
+                disabled={isUploading || !description.trim()}
               >
-                Submit Activity
+                {isUploading ? (
+                  <div className="flex items-center">
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </div>
+                ) : (
+                  "Submit Activity"
+                )}
               </Button>
             </div>
           </SheetContent>

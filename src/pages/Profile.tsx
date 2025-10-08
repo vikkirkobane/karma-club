@@ -3,12 +3,16 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { badgeData } from "@/data/badges";
+import { useNavigate } from "react-router-dom";
+import { Shield } from "lucide-react";
 
 const Profile = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   if (!user) return null;
 
@@ -91,6 +95,31 @@ const Profile = () => {
         </CardContent>
       </Card>
       
+      {/* Admin Dashboard Button - Only visible to admins */}
+      {(user.isAdmin || user.role === 'admin') && (
+        <Card className="mb-6 bg-gradient-to-r from-purple-900 to-indigo-900 text-white border-none overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-lg">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Admin Access</h3>
+                  <p className="text-sm text-gray-200">Manage platform content and users</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => navigate('/admin')}
+                className="bg-white text-purple-900 hover:bg-gray-100 font-semibold"
+              >
+                Open Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* Activity Stats & Badges */}
       <Tabs defaultValue="stats" className="w-full">
         <TabsList className="grid grid-cols-2 bg-[#333] w-full">
@@ -118,18 +147,18 @@ const Profile = () => {
               
               <div>
                 <div className="flex justify-between mb-1">
-                  <span>Volunteerism</span>
-                  <span>{user.stats.volunteerCompleted} Completed</span>
-                </div>
-                <Progress value={(user.stats.volunteerCompleted / 20) * 100} className="h-2" />
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1">
                   <span>Engagement</span>
                   <span>{user.stats.engagementCompleted} Completed</span>
                 </div>
                 <Progress value={(user.stats.engagementCompleted / 10) * 100} className="h-2" />
+              </div>
+              
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span>Volunteerism</span>
+                  <span>{user.stats.volunteerCompleted} Completed</span>
+                </div>
+                <Progress value={(user.stats.volunteerCompleted / 20) * 100} className="h-2" />
               </div>
               
               <div>

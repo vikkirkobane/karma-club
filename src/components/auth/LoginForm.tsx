@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
@@ -34,10 +34,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: error.message || "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     }
@@ -83,7 +83,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
           >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Spinner size="sm" className="mr-2" />
                 Logging in...
               </>
             ) : (
@@ -91,7 +91,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
             )}
           </Button>
           
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-sm text-gray-400">
               Don't have an account?{' '}
               <button
@@ -102,6 +102,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
                 Sign up here
               </button>
             </p>
+            <div className="border-t border-gray-700 pt-4">
+              <p className="text-xs text-gray-500 mb-2">For testing purposes:</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
+                onClick={() => {
+                  setEmail('demo@karmaclub.org');
+                  setPassword('demo123');
+                  toast({
+                    title: "Demo Credentials Loaded",
+                    description: "Click 'Log In' to continue with demo account.",
+                  });
+                }}
+              >
+                Use Demo Account
+              </Button>
+            </div>
           </div>
         </form>
       </CardContent>

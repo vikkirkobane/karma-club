@@ -12,3 +12,19 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://karma-club-app.vercel.app/sitemap.xml
+
+# Disallow admin routes
+Disallow: /admin/
+Disallow: /api/
+
+# Allow important pages
+Allow: /
+Allow: /auth
+Allow: /karma-club-full
+Allow: /leaderboard
+Allow: /community
+Allow: /levels
+Allow: /profile

@@ -40,9 +40,9 @@ export const Navigation: React.FC<NavigationProps> = ({ title }) => {
 
   const navigationItems = [
     { path: '/', label: 'Home', icon: Home },
-    { path: '/karma-club', label: 'Karma Club', icon: ClipboardList },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Users },
-    { path: '/levels', label: 'Levels', icon: TrendingUp },
+    { path: '/karma-club-full', label: 'Activities', icon: ClipboardList },
+    { path: '/community', label: 'Community', icon: Users },
+    { path: '/leaderboard', label: 'Rankings', icon: TrendingUp },
     { path: '/profile', label: 'Profile', icon: User },
   ];
 
@@ -70,7 +70,7 @@ export const Navigation: React.FC<NavigationProps> = ({ title }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatarUrl} alt={user?.username} />
+                  <AvatarImage src={user?.avatarUrl || user?.avatar_url} alt={user?.username} />
                   <AvatarFallback className="bg-emerald-700 text-white">
                     {user?.username?.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -94,7 +94,10 @@ export const Navigation: React.FC<NavigationProps> = ({ title }) => {
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-white hover:bg-gray-700">
+              <DropdownMenuItem 
+                className="text-white hover:bg-gray-700"
+                onClick={() => navigate('/settings')}
+              >
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
               </DropdownMenuItem>

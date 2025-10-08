@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Auth } from "@/pages/Auth";
-import { Loader2 } from "lucide-react";
+import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,20 +11,20 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Show loading only while we're determining auth status
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-          <p className="text-white">Loading...</p>
-        </div>
+        <LoadingSkeleton />
       </div>
     );
   }
 
+  // Show auth page if not authenticated
   if (!isAuthenticated) {
     return <Auth />;
   }
 
+  // Show protected content if authenticated
   return <>{children}</>;
 };

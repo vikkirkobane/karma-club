@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { Spinner } from "@/components/ui/spinner";
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -25,19 +25,6 @@ const countries = [
   { code: 'MX', name: 'Mexico' },
 ];
 
-const organizations = [
-  'Red Cross',
-  'United Way',
-  'Habitat for Humanity',
-  'Doctors Without Borders',
-  'Greenpeace',
-  'UNICEF',
-  'World Wildlife Fund',
-  'Salvation Army',
-  'Oxfam',
-  'Other'
-];
-
 export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
     username: '',
@@ -46,7 +33,6 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     confirmPassword: '',
     country: '',
     countryCode: '',
-    organization: ''
   });
   const { signup, isLoading } = useAuth();
 
@@ -97,12 +83,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
       await signup(formData);
       toast({
         title: "Welcome to Karma Club!",
-        description: "Your account has been created successfully.",
+        description: "Account created! Please check your email and click the confirmation link to complete registration.",
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('Signup error:', error);
       toast({
         title: "Signup Failed",
-        description: "There was an error creating your account. Please try again.",
+        description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
     }
@@ -183,22 +170,6 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
             </Select>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="organization">Organization (Optional)</Label>
-            <Select onValueChange={(value) => handleInputChange('organization', value)} disabled={isLoading}>
-              <SelectTrigger className="bg-gray-800 border-gray-700">
-                <SelectValue placeholder="Select your organization" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                {organizations.map((org) => (
-                  <SelectItem key={org} value={org}>
-                    {org}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
           <Button 
             type="submit" 
             className="w-full bg-emerald-600 hover:bg-emerald-700"
@@ -206,7 +177,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
           >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Spinner size="sm" className="mr-2" />
                 Creating Account...
               </>
             ) : (

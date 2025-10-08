@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -32,7 +31,7 @@ const Index = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Button 
           className="bg-emerald-600 hover:bg-emerald-700 h-12"
-          onClick={() => navigate("/karma-club")}
+          onClick={() => navigate("/karma-club-full")}
         >
           Start Daily Activities
         </Button>
@@ -79,7 +78,7 @@ const Index = () => {
         </CardHeader>
         <CardContent>
           <p className="mb-4">
-            The Karma Club is our flagship program where members perform planned 
+            The Karma Club is our flagship program where members perform daily 
             acts of kindness, engagement, volunteerism, and support each month.
           </p>
           <p className="mb-2">
