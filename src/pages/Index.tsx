@@ -18,7 +18,7 @@ const Index = () => {
           Welcome back, {user?.username}!
         </h1>
         <p className="text-gray-300 text-center mb-6">
-          Ready to make a difference today?
+          Making the World a Better Place, One PAK at a Time
         </p>
       </div>
 
