@@ -37,17 +37,17 @@ const Index = () => {
         </Button>
         
         <Button 
-          className="bg-blue-600 hover:bg-blue-700 h-12"
-          onClick={() => navigate("/leaderboard")}
-        >
-          View Leaderboard
-        </Button>
-        
-        <Button 
           className="bg-purple-600 hover:bg-purple-700 h-12"
           onClick={() => navigate("/levels")}
         >
           Check Level Progress
+        </Button>
+
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700 h-12"
+          onClick={() => navigate("/leaderboard")}
+        >
+          View Leaderboard
         </Button>
       </div>
 
