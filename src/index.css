@@ -99,3 +99,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom class for green progress bar indicator */
+.progress-indicator-green > div {
+  background-color: #059669 !important; /* Tailwind's emerald-600 */
+}

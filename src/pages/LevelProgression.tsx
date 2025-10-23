@@ -11,6 +11,14 @@ const LevelProgression = () => {
   
   if (!user) return null;
 
+  const calculatePercentage = (completed: number, requirement: number) => {
+    if (requirement === 0) return 0;
+    return Math.min(100, Math.round((completed / requirement) * 100));
+  };
+
+  // Find current level requirements
+  const currentLevelData = KARMA_LEVELS.find(level => level.level === user.tier);
+  
   // Calculate progress percentages based on user's current stats
   const userProgress = {
     userId: user.id,
@@ -24,10 +32,10 @@ const LevelProgression = () => {
     engagementCompleted: user.stats.engagementCompleted,
     volunteeringCompleted: user.stats.volunteerCompleted,
     supportCompleted: user.stats.supportCompleted,
-    dailyProgress: 75,
-    engagementProgress: 62.5,
-    volunteeringProgress: 75,
-    supportProgress: 75
+    dailyProgress: calculatePercentage(user.stats.dailyCompleted, currentLevelData?.dailyRequirement || 1),
+    engagementProgress: calculatePercentage(user.stats.engagementCompleted, currentLevelData?.engagementRequirement || 1),
+    volunteeringProgress: calculatePercentage(user.stats.volunteerCompleted, currentLevelData?.volunteeringRequirement || 1),
+        supportProgress: calculatePercentage(user.stats.supportCompleted, currentLevelData?.supportRequirement || 1)
   };
 
   return (
@@ -50,42 +58,34 @@ const LevelProgression = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span>Daily Acts</span>
-                <span>{userProgress.dailyActsCompleted}/{
-                  KARMA_LEVELS.find(l => l.level === userProgress.tier)?.dailyRequirement
-                }</span>
+                <span>PAKs</span>
+                <span>{userProgress.dailyProgress}%</span>
               </div>
-              <Progress value={userProgress.dailyProgress} className="h-2" />
+              <Progress value={userProgress.dailyProgress} className="h-2 progress-indicator-green" />
             </div>
             
             <div>
               <div className="flex justify-between mb-1">
                 <span>Engagement</span>
-                <span>{userProgress.engagementCompleted}/{
-                  KARMA_LEVELS.find(l => l.level === userProgress.tier)?.engagementRequirement
-                }</span>
+                <span>{userProgress.engagementProgress}%</span>
               </div>
-              <Progress value={userProgress.engagementProgress} className="h-2" />
+              <Progress value={userProgress.engagementProgress} className="h-2 progress-indicator-green" />
             </div>
             
             <div>
               <div className="flex justify-between mb-1">
                 <span>Volunteering</span>
-                <span>{userProgress.volunteeringCompleted}/{
-                  KARMA_LEVELS.find(l => l.level === userProgress.tier)?.volunteeringRequirement
-                }</span>
+                <span>{userProgress.volunteeringProgress}%</span>
               </div>
-              <Progress value={userProgress.volunteeringProgress} className="h-2" />
+              <Progress value={userProgress.volunteeringProgress} className="h-2 progress-indicator-green" />
             </div>
             
             <div>
               <div className="flex justify-between mb-1">
                 <span>Support</span>
-                <span>{userProgress.supportCompleted}/{
-                  KARMA_LEVELS.find(l => l.level === userProgress.tier)?.supportRequirement
-                }</span>
+                <span>{userProgress.supportProgress}%</span>
               </div>
-              <Progress value={userProgress.supportProgress} className="h-2" />
+              <Progress value={userProgress.supportProgress} className="h-2 progress-indicator-green" />
             </div>
           </div>
         </CardContent>
@@ -102,7 +102,7 @@ const LevelProgression = () => {
               <TableRow>
                 <TableHead className="text-white">Level</TableHead>
                 <TableHead className="text-white">Next Level</TableHead>
-                <TableHead className="text-white">Daily Acts</TableHead>
+                <TableHead className="text-white">PAKs</TableHead>
                 <TableHead className="text-white">Engagement</TableHead>
                 <TableHead className="text-white">Volunteering</TableHead>
                 <TableHead className="text-white">Support</TableHead>

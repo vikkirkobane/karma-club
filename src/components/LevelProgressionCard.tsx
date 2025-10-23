@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -20,6 +19,16 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
   
   if (!currentLevelData) return null;
 
+  const calculatePercentage = (completed: number, requirement: number) => {
+    if (requirement === 0) return 0;
+    return Math.min(100, Math.round((completed / requirement) * 100));
+  };
+
+  const dailyRequirement = nextLevelData?.dailyRequirement || currentLevelData.dailyRequirement;
+  const engagementRequirement = nextLevelData?.engagementRequirement || currentLevelData.engagementRequirement;
+  const volunteeringRequirement = nextLevelData?.volunteeringRequirement || currentLevelData.volunteeringRequirement;
+  const supportRequirement = nextLevelData?.supportRequirement || currentLevelData.supportRequirement;
+
   return (
     <Card className="bg-[#222] text-white border-none">
       <CardHeader>
@@ -40,50 +49,50 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
           </div>
 
           <div className="bg-gray-800 p-3 rounded-lg">
-            <div className="text-sm text-gray-400">Daily Acts</div>
+            <div className="text-sm text-gray-400">PAKs</div>
             <div className="flex justify-between">
-              <span>{userProgress.dailyActsCompleted}</span>
-              <span>/ {nextLevelData?.dailyRequirement || currentLevelData.dailyRequirement}</span>
+              <span>{calculatePercentage(userProgress.dailyActsCompleted, dailyRequirement)}%</span>
+              <span>({userProgress.dailyActsCompleted} / {dailyRequirement})</span>
             </div>
             <Progress 
-              value={(userProgress.dailyActsCompleted / (nextLevelData?.dailyRequirement || currentLevelData.dailyRequirement)) * 100} 
-              className="h-2 mt-1" 
+              value={calculatePercentage(userProgress.dailyActsCompleted, dailyRequirement)} 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
 
           <div className="bg-gray-800 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Engagement</div>
             <div className="flex justify-between">
-              <span>{userProgress.engagementCompleted}</span>
-              <span>/ {nextLevelData?.engagementRequirement || currentLevelData.engagementRequirement}</span>
+              <span>{calculatePercentage(userProgress.engagementCompleted, engagementRequirement)}%</span>
+              <span>({userProgress.engagementCompleted} / {engagementRequirement})</span>
             </div>
             <Progress 
-              value={(userProgress.engagementCompleted / (nextLevelData?.engagementRequirement || currentLevelData.engagementRequirement)) * 100} 
-              className="h-2 mt-1" 
+              value={calculatePercentage(userProgress.engagementCompleted, engagementRequirement)} 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
 
           <div className="bg-gray-800 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Volunteering</div>
             <div className="flex justify-between">
-              <span>{userProgress.volunteeringCompleted}</span>
-              <span>/ {nextLevelData?.volunteeringRequirement || currentLevelData.volunteeringRequirement}</span>
+              <span>{calculatePercentage(userProgress.volunteeringCompleted, volunteeringRequirement)}%</span>
+              <span>({userProgress.volunteeringCompleted} / {volunteeringRequirement})</span>
             </div>
             <Progress 
-              value={(userProgress.volunteeringCompleted / (nextLevelData?.volunteeringRequirement || currentLevelData.volunteeringRequirement)) * 100} 
-              className="h-2 mt-1" 
+              value={calculatePercentage(userProgress.volunteeringCompleted, volunteeringRequirement)} 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
 
           <div className="bg-gray-800 p-3 rounded-lg">
             <div className="text-sm text-gray-400">Support</div>
             <div className="flex justify-between">
-              <span>{userProgress.supportCompleted}</span>
-              <span>/ {nextLevelData?.supportRequirement || currentLevelData.supportRequirement}</span>
+              <span>{calculatePercentage(userProgress.supportCompleted, supportRequirement)}%</span>
+              <span>({userProgress.supportCompleted} / {supportRequirement})</span>
             </div>
             <Progress 
-              value={(userProgress.supportCompleted / (nextLevelData?.supportRequirement || currentLevelData.supportRequirement)) * 100} 
-              className="h-2 mt-1" 
+              value={calculatePercentage(userProgress.supportCompleted, supportRequirement)} 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
         </div>

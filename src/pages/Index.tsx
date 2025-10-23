@@ -13,12 +13,12 @@ const Index = () => {
   return (
     <PageLayout title="PLANNED ACTS OF KINDNESS">
       <div className="flex flex-col items-center mb-8">
-        <KarmaClubLogo className="w-32 h-32 mb-4" />
+        <KarmaClubLogo className="w-56 h-56 mb-4" />
         <h1 className="text-3xl font-bold text-white text-center mb-2">
           Welcome back, {user?.username}!
         </h1>
         <p className="text-gray-300 text-center mb-6">
-          Ready to make a difference today?
+          Making the World a Better Place, One PAK at a Time
         </p>
       </div>
 
@@ -37,17 +37,17 @@ const Index = () => {
         </Button>
         
         <Button 
-          className="bg-blue-600 hover:bg-blue-700 h-12"
-          onClick={() => navigate("/leaderboard")}
-        >
-          View Leaderboard
-        </Button>
-        
-        <Button 
           className="bg-purple-600 hover:bg-purple-700 h-12"
           onClick={() => navigate("/levels")}
         >
           Check Level Progress
+        </Button>
+
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700 h-12"
+          onClick={() => navigate("/leaderboard")}
+        >
+          View Leaderboard
         </Button>
       </div>
 

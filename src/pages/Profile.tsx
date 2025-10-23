@@ -27,6 +27,11 @@ const Profile = () => {
   // Get locked badges (badges not yet earned)
   const lockedBadges = badgeData.filter(badge => !user.badges.includes(badge.id));
 
+  const calculateActivityProgress = (completed: number, total: number) => {
+    if (total === 0) return 0;
+    return Math.min(100, Math.round((completed / total) * 100));
+  };
+
   return (
     <PageLayout title="MY PROFILE">
       {/* User Info Card */}
@@ -64,9 +69,9 @@ const Profile = () => {
           <div className="mt-4">
             <div className="flex justify-between items-center mb-1">
               <span>Level {user.level} • {user.tier} Tier</span>
-              <span>{user.points}/{nextLevelPoints} Points</span>
+              <span>{levelProgress}%</span>
             </div>
-            <Progress value={levelProgress} className="h-2" />
+            <Progress value={levelProgress} className="h-2 progress-indicator-green" />
           </div>
         </div>
         
@@ -139,34 +144,34 @@ const Profile = () => {
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span>Daily Acts</span>
-                  <span>{user.stats.dailyCompleted} Completed</span>
+                  <span>PAKs</span>
+                  <span>{calculateActivityProgress(user.stats.dailyCompleted, 100)}% Completed</span>
                 </div>
-                <Progress value={(user.stats.dailyCompleted / 100) * 100} className="h-2" />
+                <Progress value={calculateActivityProgress(user.stats.dailyCompleted, 100)} className="h-2 progress-indicator-green" />
               </div>
               
               <div>
                 <div className="flex justify-between mb-1">
                   <span>Engagement</span>
-                  <span>{user.stats.engagementCompleted} Completed</span>
+                  <span>{calculateActivityProgress(user.stats.engagementCompleted, 10)}% Completed</span>
                 </div>
-                <Progress value={(user.stats.engagementCompleted / 10) * 100} className="h-2" />
+                <Progress value={calculateActivityProgress(user.stats.engagementCompleted, 10)} className="h-2 progress-indicator-green" />
               </div>
               
               <div>
                 <div className="flex justify-between mb-1">
                   <span>Volunteerism</span>
-                  <span>{user.stats.volunteerCompleted} Completed</span>
+                  <span>{calculateActivityProgress(user.stats.volunteerCompleted, 20)}% Completed</span>
                 </div>
-                <Progress value={(user.stats.volunteerCompleted / 20) * 100} className="h-2" />
+                <Progress value={calculateActivityProgress(user.stats.volunteerCompleted, 20)} className="h-2 progress-indicator-green" />
               </div>
               
               <div>
                 <div className="flex justify-between mb-1">
                   <span>Support</span>
-                  <span>{user.stats.supportCompleted} Completed</span>
+                  <span>{calculateActivityProgress(user.stats.supportCompleted, 10)}% Completed</span>
                 </div>
-                <Progress value={(user.stats.supportCompleted / 10) * 100} className="h-2" />
+                <Progress value={calculateActivityProgress(user.stats.supportCompleted, 10)} className="h-2 progress-indicator-green" />
               </div>
             </CardContent>
           </Card>
