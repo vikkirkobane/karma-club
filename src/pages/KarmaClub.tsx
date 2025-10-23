@@ -17,6 +17,7 @@ import {
   engagementActivities,
   supportActivities
 } from "@/data/activities";
+import { Progress } from "@/components/ui/progress"; // Import Progress component
 
 interface CompletedActivity {
   string_activity_id: string;

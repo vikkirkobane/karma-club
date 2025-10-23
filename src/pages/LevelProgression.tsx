@@ -55,7 +55,7 @@ const LevelProgression = () => {
                   KARMA_LEVELS.find(l => l.level === userProgress.tier)?.dailyRequirement
                 }</span>
               </div>
-              <Progress value={userProgress.dailyProgress} className="h-2" />
+              <Progress value={userProgress.dailyProgress} className="h-2 progress-indicator-green" />
             </div>
             
             <div>
@@ -65,7 +65,7 @@ const LevelProgression = () => {
                   KARMA_LEVELS.find(l => l.level === userProgress.tier)?.engagementRequirement
                 }</span>
               </div>
-              <Progress value={userProgress.engagementProgress} className="h-2" />
+              <Progress value={userProgress.engagementProgress} className="h-2 progress-indicator-green" />
             </div>
             
             <div>
@@ -75,7 +75,7 @@ const LevelProgression = () => {
                   KARMA_LEVELS.find(l => l.level === userProgress.tier)?.volunteeringRequirement
                 }</span>
               </div>
-              <Progress value={userProgress.volunteeringProgress} className="h-2" />
+              <Progress value={userProgress.volunteeringProgress} className="h-2 progress-indicator-green" />
             </div>
             
             <div>
@@ -85,7 +85,7 @@ const LevelProgression = () => {
                   KARMA_LEVELS.find(l => l.level === userProgress.tier)?.supportRequirement
                 }</span>
               </div>
-              <Progress value={userProgress.supportProgress} className="h-2" />
+              <Progress value={userProgress.supportProgress} className="h-2 progress-indicator-green" />
             </div>
           </div>
         </CardContent>

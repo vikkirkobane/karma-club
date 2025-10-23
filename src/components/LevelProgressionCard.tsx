@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -47,7 +46,7 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
             </div>
             <Progress 
               value={(userProgress.dailyActsCompleted / (nextLevelData?.dailyRequirement || currentLevelData.dailyRequirement)) * 100} 
-              className="h-2 mt-1" 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
 
@@ -59,7 +58,7 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
             </div>
             <Progress 
               value={(userProgress.engagementCompleted / (nextLevelData?.engagementRequirement || currentLevelData.engagementRequirement)) * 100} 
-              className="h-2 mt-1" 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
 
@@ -71,7 +70,7 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
             </div>
             <Progress 
               value={(userProgress.volunteeringCompleted / (nextLevelData?.volunteeringRequirement || currentLevelData.volunteeringRequirement)) * 100} 
-              className="h-2 mt-1" 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
 
@@ -83,7 +82,7 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
             </div>
             <Progress 
               value={(userProgress.supportCompleted / (nextLevelData?.supportRequirement || currentLevelData.supportRequirement)) * 100} 
-              className="h-2 mt-1" 
+              className="h-2 mt-1 progress-indicator-green" 
             />
           </div>
         </div>

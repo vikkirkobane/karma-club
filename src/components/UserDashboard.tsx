@@ -101,7 +101,7 @@ export const UserDashboard: React.FC = () => {
               <span>Level {stats.level}</span>
               <span>{currentLevelProgress}/100 Points</span>
             </div>
-            <Progress value={levelProgress} className="h-3" />
+            <Progress value={levelProgress} className="h-3 progress-indicator-green" />
             <div className="text-xs text-gray-400 text-center">
               {100 - currentLevelProgress} points to next level
             </div>
@@ -123,7 +123,7 @@ export const UserDashboard: React.FC = () => {
               <span>This Week</span>
               <span>{weeklyProgress}/{weeklyGoal} Points</span>
             </div>
-            <Progress value={weeklyProgressPercent} className="h-2" />
+            <Progress value={weeklyProgressPercent} className="h-2 progress-indicator-green" />
             <div className="text-xs text-purple-200 text-center">
               {weeklyProgressPercent >= 100 ? "Goal achieved! 🎉" : `${weeklyGoal - weeklyProgress} points to go`}
             </div>
@@ -142,7 +142,7 @@ export const UserDashboard: React.FC = () => {
               <span>Daily Acts</span>
               <span>{stats.dailyCompleted} completed</span>
             </div>
-            <Progress value={Math.min((stats.dailyCompleted / 100) * 100, 100)} className="h-2" />
+            <Progress value={Math.min((stats.dailyCompleted / 100) * 100, 100)} className="h-2 progress-indicator-green" />
           </div>
           
           <div>
@@ -150,7 +150,7 @@ export const UserDashboard: React.FC = () => {
               <span>Engagement</span>
               <span>{stats.engagementCompleted} completed</span>
             </div>
-            <Progress value={Math.min((stats.engagementCompleted / 10) * 100, 100)} className="h-2" />
+            <Progress value={Math.min((stats.engagementCompleted / 10) * 100, 100)} className="h-2 progress-indicator-green" />
           </div>
           
           <div>
@@ -158,7 +158,7 @@ export const UserDashboard: React.FC = () => {
               <span>Volunteerism</span>
               <span>{stats.volunteerCompleted} completed</span>
             </div>
-            <Progress value={Math.min((stats.volunteerCompleted / 20) * 100, 100)} className="h-2" />
+            <Progress value={Math.min((stats.volunteerCompleted / 20) * 100, 100)} className="h-2 progress-indicator-green" />
           </div>
           
           <div>
@@ -166,7 +166,7 @@ export const UserDashboard: React.FC = () => {
               <span>Support</span>
               <span>{stats.supportCompleted} completed</span>
             </div>
-            <Progress value={Math.min((stats.supportCompleted / 10) * 100, 100)} className="h-2" />
+            <Progress value={Math.min((stats.supportCompleted / 10) * 100, 100)} className="h-2 progress-indicator-green" />
           </div>
         </CardContent>
       </Card>

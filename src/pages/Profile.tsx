@@ -66,7 +66,7 @@ const Profile = () => {
               <span>Level {user.level} • {user.tier} Tier</span>
               <span>{user.points}/{nextLevelPoints} Points</span>
             </div>
-            <Progress value={levelProgress} className="h-2" />
+            <Progress value={levelProgress} className="h-2 progress-indicator-green" />
           </div>
         </div>
         
@@ -142,7 +142,7 @@ const Profile = () => {
                   <span>Daily Acts</span>
                   <span>{user.stats.dailyCompleted} Completed</span>
                 </div>
-                <Progress value={(user.stats.dailyCompleted / 100) * 100} className="h-2" />
+                <Progress value={(user.stats.dailyCompleted / 100) * 100} className="h-2 progress-indicator-green" />
               </div>
               
               <div>
@@ -150,7 +150,7 @@ const Profile = () => {
                   <span>Engagement</span>
                   <span>{user.stats.engagementCompleted} Completed</span>
                 </div>
-                <Progress value={(user.stats.engagementCompleted / 10) * 100} className="h-2" />
+                <Progress value={(user.stats.engagementCompleted / 10) * 100} className="h-2 progress-indicator-green" />
               </div>
               
               <div>
@@ -158,7 +158,7 @@ const Profile = () => {
                   <span>Volunteerism</span>
                   <span>{user.stats.volunteerCompleted} Completed</span>
                 </div>
-                <Progress value={(user.stats.volunteerCompleted / 20) * 100} className="h-2" />
+                <Progress value={(user.stats.volunteerCompleted / 20) * 100, 100)} className="h-2 progress-indicator-green" />
               </div>
               
               <div>
@@ -166,7 +166,7 @@ const Profile = () => {
                   <span>Support</span>
                   <span>{user.stats.supportCompleted} Completed</span>
                 </div>
-                <Progress value={(user.stats.supportCompleted / 10) * 100} className="h-2" />
+                <Progress value={(user.stats.supportCompleted / 10) * 100, 100)} className="h-2 progress-indicator-green" />
               </div>
             </CardContent>
           </Card>
