@@ -13,7 +13,7 @@ const Index = () => {
   return (
     <PageLayout title="PLANNED ACTS OF KINDNESS">
       <div className="flex flex-col items-center mb-8">
-        <KarmaClubLogo className="w-48 h-48 mb-4" />
+        <KarmaClubLogo className="w-56 h-56 mb-4" />
         <h1 className="text-3xl font-bold text-white text-center mb-2">
           Welcome back, {user?.username}!
         </h1>
