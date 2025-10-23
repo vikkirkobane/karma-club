@@ -37,6 +37,11 @@ export const UserDashboard: React.FC = () => {
   const weeklyProgress = Math.min((stats.points % 100), weeklyGoal);
   const weeklyProgressPercent = Math.round((weeklyProgress / weeklyGoal) * 100);
 
+  const calculateActivityProgress = (completed: number, total: number) => {
+    if (total === 0) return 0;
+    return Math.min(100, Math.round((completed / total) * 100));
+  };
+
   return (
     <div className="space-y-4">
       {/* Quick Stats */}
@@ -99,7 +104,7 @@ export const UserDashboard: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Level {stats.level}</span>
-              <span>{currentLevelProgress}/100 Points</span>
+              <span>{levelProgress}%</span>
             </div>
             <Progress value={levelProgress} className="h-3 progress-indicator-green" />
             <div className="text-xs text-gray-400 text-center">
@@ -121,7 +126,7 @@ export const UserDashboard: React.FC = () => {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>This Week</span>
-              <span>{weeklyProgress}/{weeklyGoal} Points</span>
+              <span>{weeklyProgressPercent}%</span>
             </div>
             <Progress value={weeklyProgressPercent} className="h-2 progress-indicator-green" />
             <div className="text-xs text-purple-200 text-center">
@@ -140,33 +145,33 @@ export const UserDashboard: React.FC = () => {
           <div>
             <div className="flex justify-between mb-1 text-sm">
               <span>Daily Acts</span>
-              <span>{stats.dailyCompleted} completed</span>
+              <span>{calculateActivityProgress(stats.dailyCompleted, 100)}% completed</span>
             </div>
-            <Progress value={Math.min((stats.dailyCompleted / 100) * 100, 100)} className="h-2 progress-indicator-green" />
+            <Progress value={calculateActivityProgress(stats.dailyCompleted, 100)} className="h-2 progress-indicator-green" />
           </div>
           
           <div>
             <div className="flex justify-between mb-1 text-sm">
               <span>Engagement</span>
-              <span>{stats.engagementCompleted} completed</span>
+              <span>{calculateActivityProgress(stats.engagementCompleted, 10)}% completed</span>
             </div>
-            <Progress value={Math.min((stats.engagementCompleted / 10) * 100, 100)} className="h-2 progress-indicator-green" />
+            <Progress value={calculateActivityProgress(stats.engagementCompleted, 10)} className="h-2 progress-indicator-green" />
           </div>
           
           <div>
             <div className="flex justify-between mb-1 text-sm">
               <span>Volunteerism</span>
-              <span>{stats.volunteerCompleted} completed</span>
+              <span>{calculateActivityProgress(stats.volunteerCompleted, 20)}% completed</span>
             </div>
-            <Progress value={Math.min((stats.volunteerCompleted / 20) * 100, 100)} className="h-2 progress-indicator-green" />
+            <Progress value={calculateActivityProgress(stats.volunteerCompleted, 20)} className="h-2 progress-indicator-green" />
           </div>
           
           <div>
             <div className="flex justify-between mb-1 text-sm">
               <span>Support</span>
-              <span>{stats.supportCompleted} completed</span>
+              <span>{calculateActivityProgress(stats.supportCompleted, 10)}% completed</span>
             </div>
-            <Progress value={Math.min((stats.supportCompleted / 10) * 100, 100)} className="h-2 progress-indicator-green" />
+            <Progress value={calculateActivityProgress(stats.supportCompleted, 10)} className="h-2 progress-indicator-green" />
           </div>
         </CardContent>
       </Card>
