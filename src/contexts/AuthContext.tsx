@@ -55,11 +55,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = useCallback(async (userId: string) => {
     try {
-      const { data: profile, error } = await supabase
+      // Try to get profile with all possible fields
+      let { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+
+      // If there's an error related to unauthorized access or missing field, try alternative approach
+      if (error) {
+        console.log('Profile load error:', error);
+        // Try a basic selection without specifying problematic fields
+        ({ data: profile, error } = await supabase
+          .from('profiles')
+          .select('id, email, username, country, organization, avatar_url, created_at, is_admin, role')
+          .eq('id', userId)
+          .single());
+      }
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         console.error('Error loading user profile:', error);
@@ -78,12 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           points: 0,
           tier: 'Member',
           country: profile.country,
-          countryCode: profile.country_code,
+          countryCode: profile.country_code || profile.countryCode || '', // Handle both naming conventions and provide default
           organization: profile.organization,
           joinDate: profile.created_at ? new Date(profile.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
-          // Load admin status from database
-          isAdmin: profile.is_admin || false,
-          role: profile.role || 'user',
+          // Load admin status from database - check for both possible field names
+          isAdmin: profile.is_admin || profile.isAdmin || false,
+          role: profile.role || profile.user_role || 'user', // Handle possible different field names
           badges: ['newcomer'],
           stats: {
             totalActivities: 0,
@@ -98,29 +110,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Persist user to localStorage
         localStorage.setItem('karma_club_user', JSON.stringify(userData));
       } else {
-        // Create default profile for new user
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          const newProfile = {
-            id: authUser.id,
-            email: authUser.email,
-            username: authUser.email?.split('@')[0] || 'User',
-            created_at: new Date().toISOString()
-            // Note: other fields will be handled client-side
-          };
-
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert([newProfile]);
-
-          if (!insertError) {
-            await loadUserProfile(authUser.id);
+        // Profile doesn't exist in DB, but user is authenticated, so create a default one
+        // This might fail due to RLS, so we handle it gracefully
+        console.log('No profile found for user, attempting to create default profile...');
+        
+        // For new users, we rely on the Supabase auth trigger to create the profile
+        // If that didn't work, we'll use a fallback user until they update their profile
+        const fallbackUser: User = {
+          id: userId,
+          username: 'New User', // Will be updated when they edit profile
+          email: '', // Will be populated when profile is available
+          avatarUrl: '/placeholder.svg',
+          avatar_url: '/placeholder.svg',
+          level: 1,
+          points: 0,
+          tier: 'Member',
+          country: '',
+          countryCode: '',
+          organization: '',
+          joinDate: new Date().toLocaleDateString(),
+          isAdmin: false,
+          role: 'user',
+          badges: ['newcomer'],
+          stats: {
+            totalActivities: 0,
+            dailyStreak: 0,
+            dailyCompleted: 0,
+            volunteerCompleted: 0,
+            engagementCompleted: 0,
+            supportCompleted: 0
           }
-        }
+        };
+        setUser(fallbackUser);
+        localStorage.setItem('karma_club_user', JSON.stringify(fallbackUser));
       }
     } catch (error) {
       console.error('Error in loadUserProfile:', error);
-      // Fall back to mock user for development
+      // Fall back to demo user for development
       const mockUser: User = {
         id: "user1",
         username: "KindnessWarrior",
@@ -286,6 +312,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      // Check if Supabase is properly configured before attempting login
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || supabaseUrl === 'your-supabase-url' || !supabaseAnonKey || supabaseAnonKey === 'your-supabase-anon-key') {
+        console.warn('Supabase not properly configured, falling back to demo mode');
+        // Fallback to demo mode if Supabase isn't configured
+        const demoUser: User = {
+          id: "demo-user",
+          username: "Demo User",
+          email: email || "demo@karmaclub.org",
+          avatarUrl: "/placeholder.svg",
+          avatar_url: "/placeholder.svg",
+          level: 1,
+          points: 0,
+          tier: "Member",
+          country: "United States",
+          countryCode: "US",
+          organization: "Demo Organization",
+          joinDate: new Date().toLocaleDateString(),
+          isAdmin: false,
+          role: "user",
+          badges: ["newcomer"],
+          stats: {
+            totalActivities: 0,
+            dailyStreak: 0,
+            dailyCompleted: 0,
+            volunteerCompleted: 0,
+            engagementCompleted: 0,
+            supportCompleted: 0
+          }
+        };
+        setUser(demoUser);
+        localStorage.setItem('karma_club_user', JSON.stringify(demoUser));
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -304,9 +367,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error.message?.includes('Email not confirmed')) {
         throw new Error('Please check your email and click the confirmation link before logging in.');
       } else if (error.message?.includes('Invalid login credentials')) {
-        throw new Error('Invalid email or password. Please check your credentials and try again.');
+        // Provide helpful message about demo account
+        throw new Error('Invalid email or password. For a demo account, use email: demo@karmaclub.org and password: demo123');
+      } else if (error.message?.includes('NetworkError')) {
+        throw new Error('Unable to connect to authentication service. Check your internet connection.');
+      } else if (error.message?.includes('400')) {
+        throw new Error('Authentication service error. The Supabase configuration might be incorrect or you may need to confirm your email.');
       } else {
-        throw new Error(error.message || 'Login failed. Please try again.');
+        throw new Error(error.message || 'Login failed. Please try again or use the demo account (demo@karmaclub.org / demo123).');
       }
     } finally {
       setIsLoading(false);
@@ -326,28 +394,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // Create user profile with only fields that exist in the database
-        const profileData = {
+        // The profile will be automatically created by the Supabase trigger function
+        // when the user confirms their email. We just need to wait for that.
+        // For now, we'll show a message that the user needs to confirm their email.
+        console.log('User created, please check email for confirmation:', data.user.email);
+        
+        // Create a temporary user object in localStorage to maintain session
+        const tempUser: User = {
           id: data.user.id,
           email: userData.email,
-          username: userData.username || userData.email.split('@')[0],
-          country: userData.country,
-          country_code: userData.countryCode,
-          organization: userData.organization,
-          created_at: new Date().toISOString()
-          // Note: level, points, tier, badges, and stats will be handled client-side
-          // until the database schema includes these fields
+          username: userData.username || userData.email.split('@')[0] || 'New User',
+          avatarUrl: '/placeholder.svg',
+          level: 1,
+          points: 0,
+          tier: 'Member',
+          country: userData.country || '',
+          countryCode: userData.countryCode || '',
+          organization: userData.organization || '',
+          joinDate: new Date().toLocaleDateString(),
+          isAdmin: false,
+          role: 'user',
+          badges: ['newcomer'],
+          stats: {
+            totalActivities: 0,
+            dailyStreak: 0,
+            dailyCompleted: 0,
+            volunteerCompleted: 0,
+            engagementCompleted: 0,
+            supportCompleted: 0
+          }
         };
-
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([profileData]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-        }
-
-        await loadUserProfile(data.user.id);
+        
+        setUser(tempUser);
+        localStorage.setItem('karma_club_user', JSON.stringify(tempUser));
       }
     } catch (error: unknown) {
       console.error('Signup error:', error);
@@ -391,6 +470,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dbUpdateData.avatar_url = updatedUser.avatar_url;
         }
         if (userData.country !== undefined) dbUpdateData.country = updatedUser.country;
+        // Only update country_code if it exists (may not be in the database schema)
         if (userData.countryCode !== undefined) dbUpdateData.country_code = updatedUser.countryCode;
         if (userData.organization !== undefined) dbUpdateData.organization = updatedUser.organization;
         

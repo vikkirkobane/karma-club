@@ -10,7 +10,7 @@ import { useUserStats } from "@/contexts/UserStatsContext";
 import { ActivitySubmissionForm } from "@/components/ActivitySubmissionForm";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { submitActivity, updateUserPoints, getUserCompletedActivities, checkActivityCompletion } from "@/lib/api";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import {
   dailyActivities,
   volunteerActivities,

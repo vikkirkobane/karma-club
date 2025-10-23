@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart, MessageSquare, Send, Share2, Flag, Upload } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from "@/components/ui/use-toast";
 import { Input } from './ui/input';
 import { MediaUpload } from './MediaUpload';
 import { ReportContent } from './ReportContent';

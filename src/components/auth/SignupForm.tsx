@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Spinner } from "@/components/ui/spinner";
 
 interface SignupFormProps {
@@ -195,6 +195,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
               >
                 Log in here
               </button>
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Note: After signup, you'll need to confirm your email before logging in.
             </p>
           </div>
         </form>

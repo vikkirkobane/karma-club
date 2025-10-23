@@ -103,7 +103,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
               </button>
             </p>
             <div className="border-t border-gray-700 pt-4">
-              <p className="text-xs text-gray-500 mb-2">For testing purposes:</p>
+              <p className="text-xs text-gray-500 mb-2">Need a test account?</p>
               <Button
                 type="button"
                 variant="outline"
@@ -119,6 +119,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
               >
                 Use Demo Account
               </Button>
+              <p className="text-xs text-gray-500 mt-2">
+                Demo: demo@karmaclub.org / demo123
+              </p>
             </div>
           </div>
         </form>
