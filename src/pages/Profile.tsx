@@ -144,7 +144,7 @@ const Profile = () => {
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between mb-1">
-                  <span>Daily Acts</span>
+                  <span>PAKs</span>
                   <span>{calculateActivityProgress(user.stats.dailyCompleted, 100)}% Completed</span>
                 </div>
                 <Progress value={calculateActivityProgress(user.stats.dailyCompleted, 100)} className="h-2 progress-indicator-green" />

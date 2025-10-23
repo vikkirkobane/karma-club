@@ -77,12 +77,12 @@ const KarmaClub = () => {
     loadCompletedActivities();
   }, [user]);
 
-  // The 4 main activity categories - SYSTEMATIC ORDER: Daily Acts, Engagement, Volunteerism, Support
+  // The 4 main activity categories - SYSTEMATIC ORDER: PAKs, Engagement, Volunteerism, Support
   const categories = [
     { 
       id: "daily", 
-      name: "Daily Acts", 
-      description: "Daily acts of kindness", 
+      name: "PAKs", 
+      description: "Planned Acts of Kindness", 
       icon: Sparkles,
       color: "emerald",
       activities: dailyActivities

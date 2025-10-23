@@ -49,7 +49,7 @@ const LevelProgressionCard: React.FC<LevelProgressionCardProps> = ({ userProgres
           </div>
 
           <div className="bg-gray-800 p-3 rounded-lg">
-            <div className="text-sm text-gray-400">Daily Acts</div>
+            <div className="text-sm text-gray-400">PAKs</div>
             <div className="flex justify-between">
               <span>{calculatePercentage(userProgress.dailyActsCompleted, dailyRequirement)}%</span>
               <span>({userProgress.dailyActsCompleted} / {dailyRequirement})</span>

@@ -136,7 +136,7 @@ export const UserDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Activity Progress - Systematic Order: Daily Acts, Engagement, Volunteerism, Support */}
+      {/* Activity Progress - Systematic Order: PAKs, Engagement, Volunteerism, Support */}
       <Card className="bg-[#222] text-white border-none">
         <CardHeader className="pb-2">
           <CardTitle>Activity Progress</CardTitle>
@@ -144,7 +144,7 @@ export const UserDashboard: React.FC = () => {
         <CardContent className="space-y-4">
           <div>
             <div className="flex justify-between mb-1 text-sm">
-              <span>Daily Acts</span>
+              <span>PAKs</span>
               <span>{calculateActivityProgress(stats.dailyCompleted, 100)}% completed</span>
             </div>
             <Progress value={calculateActivityProgress(stats.dailyCompleted, 100)} className="h-2 progress-indicator-green" />

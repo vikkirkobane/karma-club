@@ -58,7 +58,7 @@ const LevelProgression = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span>Daily Acts</span>
+                <span>PAKs</span>
                 <span>{userProgress.dailyProgress}%</span>
               </div>
               <Progress value={userProgress.dailyProgress} className="h-2 progress-indicator-green" />
@@ -102,7 +102,7 @@ const LevelProgression = () => {
               <TableRow>
                 <TableHead className="text-white">Level</TableHead>
                 <TableHead className="text-white">Next Level</TableHead>
-                <TableHead className="text-white">Daily Acts</TableHead>
+                <TableHead className="text-white">PAKs</TableHead>
                 <TableHead className="text-white">Engagement</TableHead>
                 <TableHead className="text-white">Volunteering</TableHead>
                 <TableHead className="text-white">Support</TableHead>
