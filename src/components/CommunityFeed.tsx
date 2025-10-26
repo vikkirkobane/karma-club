@@ -96,17 +96,8 @@ export const CommunityFeed: React.FC = () => {
       const postsData = await getCommunityPosts(20, user?.id);
       
       if (postsData && postsData.length > 0) {
-        // Load comments for each post
-        const postsWithComments = await Promise.all(
-          postsData.map(async (post) => {
-            const comments = await getPostComments(post.id);
-            return {
-              ...post,
-              comments: comments
-            };
-          })
-        );
-        setPosts(postsWithComments);
+        // Don't load comments immediately - just load the posts, comments will be loaded on demand when user opens comments section
+        setPosts(postsData);
       } else {
         // Fallback to mock data if no posts or database error
         const mockPosts: CommunityPost[] = [
@@ -155,7 +146,6 @@ export const CommunityFeed: React.FC = () => {
               avatar_url: "/placeholder.svg"
             },
             user_liked: false,
-            comments: []
           },
           {
             id: 3,
@@ -169,7 +159,6 @@ export const CommunityFeed: React.FC = () => {
               avatar_url: "/placeholder.svg"
             },
             user_liked: false,
-            comments: []
           }
         ];
         setPosts(mockPosts);
@@ -190,7 +179,6 @@ export const CommunityFeed: React.FC = () => {
             avatar_url: "/placeholder.svg"
           },
           user_liked: false,
-          comments: []
         }
       ];
       setPosts(mockPosts);

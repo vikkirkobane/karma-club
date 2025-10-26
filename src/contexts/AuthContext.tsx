@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { 
+  getUserProfileSchemaAware, 
+  updateUserProfileSchemaAware,
+  createProfileSchemaAware
+} from '@/lib/auth-helpers';
 
 interface User {
   id: string;
@@ -55,28 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = useCallback(async (userId: string) => {
     try {
-      // Try to get profile with all possible fields
-      let { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      // If there's an error related to unauthorized access or missing field, try alternative approach
-      if (error) {
-        console.log('Profile load error:', error);
-        // Try a basic selection without specifying problematic fields
-        ({ data: profile, error } = await supabase
-          .from('profiles')
-          .select('id, email, username, country, organization, avatar_url, created_at, is_admin, role')
-          .eq('id', userId)
-          .single());
-      }
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error loading user profile:', error);
-        return;
-      }
+      // Use the schema-aware helper to get user profile
+      const profile = await getUserProfileSchemaAware(userId);
 
       if (profile) {
         const userData: User = {
@@ -209,6 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const result = await Promise.race([sessionPromise, timeout]) as SessionResult;
           
           if (result?.data?.session?.user) {
+            // Load user profile with database schema compatibility checks
             await loadUserProfile(result.data.session.user.id);
           } else {
             // No session found - user needs to login
@@ -267,13 +253,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        // Load user profile with database schema compatibility checks
         await loadUserProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        localStorage.removeItem('karma_club_user');
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      try {
+        subscription.unsubscribe();
+      } catch (err) {
+        console.warn('Error unsubscribing from auth state changes:', err);
+      }
+    };
   }, [loadUserProfile]);
 
   const login = async (email: string, password: string) => {
@@ -355,6 +349,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        // If it's an invalid credentials error, check if it's because of email confirmation
+        // but we want to provide a helpful message that also suggests the demo account
+        if (error.message?.includes('Invalid login credentials')) {
+          // Try to check if user exists but email is not confirmed
+          try {
+            const { data: userCheck, error: userCheckError } = await supabase
+              .from('auth.users')
+              .select('email_confirmed_at, id')
+              .eq('email', email)
+              .single();
+              
+            if (userCheck && !userCheck.email_confirmed_at) {
+              throw new Error('Your email has not been confirmed. Please check your email and click the confirmation link. For a demo account, use email: demo@karmaclub.org and password: demo123');
+            }
+          } catch (checkError) {
+            // If the check fails, just throw the original error with demo info
+            throw new Error('Invalid email or password. For a demo account, use email: demo@karmaclub.org and password: demo123');
+          }
+        }
         throw error;
       }
 
@@ -390,6 +403,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        // Check if it's an email validation error
+        if (error.message?.includes('validation')) {
+          throw new Error('Please enter a valid email address.');
+        }
         throw error;
       }
 
@@ -427,11 +444,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setUser(tempUser);
         localStorage.setItem('karma_club_user', JSON.stringify(tempUser));
+        
+        // If the user provided additional profile info, try to create/update their profile
+        // using the schema-aware helper
+        if (userData.username || userData.country || userData.organization || userData.countryCode) {
+          try {
+            const profileData = {
+              username: userData.username || userData.email.split('@')[0],
+              country: userData.country,
+              organization: userData.organization,
+              country_code: userData.countryCode,
+              avatar_url: '/placeholder.svg',
+              email: userData.email
+            };
+            
+            // Attempt to create the profile with provided data using schema-aware approach
+            await createProfileSchemaAware(data.user.id, profileData);
+          } catch (profileError) {
+            console.warn('Could not create profile immediately (this is expected if RLS prevents it):', profileError);
+            // This is fine - the profile will be created by the auth trigger function
+            // on email confirmation, or the user can update it later
+          }
+        }
       }
     } catch (error: unknown) {
       console.error('Signup error:', error);
       if (error.message?.includes('already registered')) {
         throw new Error('An account with this email already exists. Please try logging in instead.');
+      } else if (error.message?.includes('password')) {
+        throw new Error('Password does not meet requirements. Please use at least 6 characters.');
       } else {
         throw new Error(error.message || 'Signup failed. Please try again.');
       }
@@ -463,26 +504,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update in Supabase only if the fields exist in the database schema
       try {
         // Only include fields that actually exist in the database
-        const dbUpdateData: Partial<User> = {};
+        let dbUpdateData: any = {};
         
         if (userData.username !== undefined) dbUpdateData.username = updatedUser.username;
         if (userData.avatarUrl !== undefined || userData.avatar_url !== undefined) {
           dbUpdateData.avatar_url = updatedUser.avatar_url;
         }
         if (userData.country !== undefined) dbUpdateData.country = updatedUser.country;
-        // Only update country_code if it exists (may not be in the database schema)
         if (userData.countryCode !== undefined) dbUpdateData.country_code = updatedUser.countryCode;
         if (userData.organization !== undefined) dbUpdateData.organization = updatedUser.organization;
         
         // Only attempt database update if there are fields to update
         if (Object.keys(dbUpdateData).length > 0) {
-          const { error } = await supabase
-            .from('profiles')
-            .update(dbUpdateData)
-            .eq('id', user.id);
-
-          if (error) {
-            console.error('Error updating user profile:', error);
+          // Use the schema-aware helper to update user profile
+          const success = await updateUserProfileSchemaAware(user.id, dbUpdateData);
+          if (!success) {
+            console.error('Failed to update user profile in database');
           }
         }
       } catch (error) {

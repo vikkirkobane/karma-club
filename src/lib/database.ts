@@ -27,9 +27,13 @@ export interface UserProfile {
   username: string;
   email: string;
   country?: string;
+  country_code?: string;
   organization?: string;
   avatar_url?: string;
   created_at: string;
+  updated_at: string;
+  is_admin: boolean;
+  role: string;
 }
 
 export interface UserStats {
@@ -37,6 +41,8 @@ export interface UserStats {
   points: number;
   level: number;
   streak: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Activity {
@@ -63,6 +69,11 @@ export interface UserActivity {
   media_url?: string;
   description?: string;
   points_earned: number;
+  status?: string; // pending, approved, rejected
+  reviewed_at?: string;
+  reviewed_by?: string;
+  review_notes?: string;
+  submission_title?: string;
 }
 
 // User Profile Functions
@@ -161,7 +172,8 @@ export async function completeActivity(
   userId: string,
   activityId: number,
   description?: string,
-  mediaUrl?: string
+  mediaUrl?: string,
+  submissionTitle?: string
 ): Promise<boolean> {
   // First get the activity to know how many points to award
   const { data: activity, error: activityError } = await supabase
@@ -183,11 +195,82 @@ export async function completeActivity(
       activity_id: activityId,
       description,
       media_url: mediaUrl,
-      points_earned: activity.points
+      points_earned: activity.points,
+      status: 'pending', // Default status is pending for admin review
+      submission_title: submissionTitle
     });
 
   if (error) {
     console.error('Error completing activity:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Function to get user activities with their status (for admin review)
+export async function getUserActivitiesWithStatus(userId: string): Promise<UserActivity[]> {
+  const { data, error } = await supabase
+    .from('user_activities')
+    .select('*, activities(title, points)')
+    .eq('user_id', userId)
+    .order('completed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching user activities:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Function to get pending activities for admin review
+export async function getPendingActivities(): Promise<UserActivity[]> {
+  const { data, error } = await supabase
+    .from('user_activities')
+    .select('*, profiles(username, email), activities(title, points)')
+    .eq('status', 'pending')
+    .order('completed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching pending activities:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Function to update activity status (for admin review)
+export async function updateActivityStatus(
+  activityId: number, 
+  status: 'pending' | 'approved' | 'rejected', 
+  reviewedBy?: string,
+  reviewNotes?: string
+): Promise<boolean> {
+  const updates: {
+    status: string;
+    reviewed_at?: string;
+    reviewed_by?: string;
+    review_notes?: string;
+  } = {
+    status: status,
+    reviewed_at: new Date().toISOString()
+  };
+
+  if (reviewedBy) {
+    updates.reviewed_by = reviewedBy;
+  }
+  if (reviewNotes) {
+    updates.review_notes = reviewNotes;
+  }
+
+  const { error } = await supabase
+    .from('user_activities')
+    .update(updates)
+    .eq('id', activityId);
+
+  if (error) {
+    console.error('Error updating activity status:', error);
     return false;
   }
 
@@ -461,6 +544,290 @@ export async function createComment(userId: string, postId: number, content: str
 }
 
 // Get community stats for the dashboard
+// Community Challenge Interfaces
+export interface CommunityChallenge {
+  id: number;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  reward_points: number;
+  reward_badge?: string;
+  participants_count: number;
+  is_active: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChallengeParticipant {
+  id: number;
+  challenge_id: number;
+  user_id: string;
+  progress: number;
+  completed: boolean;
+  joined_at: string;
+  completed_at?: string;
+}
+
+// Community Challenge Functions
+export async function getActiveChallenges(): Promise<CommunityChallenge[]> {
+  try {
+    const { data, error } = await supabase
+      .from('community_challenges')
+      .select('*')
+      .eq('is_active', true)
+      .order('start_date', { ascending: false });
+
+    if (error) {
+      // Check if it's a "relation does not exist" error
+      if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist')) {
+        console.warn('Community challenges table does not exist. Please run the community migration SQL.');
+        return [];
+      }
+      console.error('Error fetching active challenges:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getActiveChallenges:', error);
+    return [];
+  }
+}
+
+export async function joinChallenge(userId: string, challengeId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('challenge_participants')
+      .insert({
+        challenge_id: challengeId,
+        user_id: userId
+      });
+
+    if (error) {
+      console.error('Error joining challenge:', error);
+      return false;
+    }
+
+    // Update participants count in the challenge - try RPC function if it exists
+    try {
+      await supabase.rpc('update_challenge_participants_count');
+    } catch (rpcError) {
+      console.warn('Challenge participants count update function not available:', rpcError);
+      // This is okay - the count will be calculated on read or updated by triggers
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in joinChallenge:', error);
+    return false;
+  }
+}
+
+export async function getChallengeParticipants(challengeId: number): Promise<ChallengeParticipant[]> {
+  try {
+    const { data, error } = await supabase
+      .from('challenge_participants')
+      .select('*')
+      .eq('challenge_id', challengeId);
+
+    if (error) {
+      // Check if it's a "relation does not exist" error
+      if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist')) {
+        console.warn('Challenge participants table does not exist. Please run the community migration SQL.');
+        return [];
+      }
+      console.error('Error fetching challenge participants:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getChallengeParticipants:', error);
+    return [];
+  }
+}
+
+export async function getUserChallengeParticipation(userId: string): Promise<ChallengeParticipant[]> {
+  try {
+    const { data, error } = await supabase
+      .from('challenge_participants')
+      .select('*, community_challenges(title, end_date)')
+      .eq('user_id', userId);
+
+    if (error) {
+      // Check if it's a "relation does not exist" error
+      if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist')) {
+        console.warn('Challenge participants table does not exist. Please run the community migration SQL.');
+        return [];
+      }
+      console.error('Error fetching user challenge participation:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserChallengeParticipation:', error);
+    return [];
+  }
+}
+
+// Contact Message Interface
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status?: string; // new, read, replied
+  created_at: string;
+  updated_at: string;
+}
+
+// Contact Message Functions
+export async function submitContactMessage(message: Omit<ContactMessage, 'id' | 'status' | 'created_at' | 'updated_at'>): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('contact_messages')
+      .insert({
+        name: message.name,
+        email: message.email,
+        subject: message.subject,
+        message: message.message
+      });
+
+    if (error) {
+      console.error('Error submitting contact message:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in submitContactMessage:', error);
+    return false;
+  }
+}
+
+// Post Report Interface
+export interface PostReport {
+  id: number;
+  post_id?: number;
+  comment_id?: number;
+  reporter_user_id: string;
+  reason: string;
+  description?: string;
+  status: string; // pending, reviewed, resolved
+  reviewed_by?: string;
+  reviewed_at?: string;
+  created_at: string;
+}
+
+// Post Report Functions
+export async function reportPost(
+  reporterUserId: string, 
+  postId: number, 
+  reason: string, 
+  description?: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('post_reports')
+      .insert({
+        post_id: postId,
+        reporter_user_id: reporterUserId,
+        reason: reason,
+        description: description
+      });
+
+    if (error) {
+      console.error('Error reporting post:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in reportPost:', error);
+    return false;
+  }
+}
+
+export async function reportComment(
+  reporterUserId: string, 
+  commentId: number, 
+  reason: string, 
+  description?: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('post_reports')
+      .insert({
+        comment_id: commentId,
+        reporter_user_id: reporterUserId,
+        reason: reason,
+        description: description
+      });
+
+    if (error) {
+      console.error('Error reporting comment:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in reportComment:', error);
+    return false;
+  }
+}
+
+export async function getReportsForAdmin(userId: string): Promise<PostReport[]> {
+  try {
+    const { data, error } = await supabase
+      .from('post_reports')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching reports:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getReportsForAdmin:', error);
+    return [];
+  }
+}
+
+export async function updateReportStatus(reportId: number, status: string, reviewedBy?: string): Promise<boolean> {
+  try {
+    const updates: { status: string; reviewed_at?: string; reviewed_by?: string } = {
+      status: status,
+      reviewed_at: new Date().toISOString()
+    };
+
+    if (reviewedBy) {
+      updates.reviewed_by = reviewedBy;
+    }
+
+    const { error } = await supabase
+      .from('post_reports')
+      .update(updates)
+      .eq('id', reportId);
+
+    if (error) {
+      console.error('Error updating report status:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in updateReportStatus:', error);
+    return false;
+  }
+}
+
 export async function getCommunityStats(): Promise<{
   activeMembers: number;
   actsShared: number;
@@ -468,27 +835,46 @@ export async function getCommunityStats(): Promise<{
   badgesEarned: number;
 }> {
   try {
+    // First, try to get stats from the community_stats view if it exists
     const { data, error } = await supabase
       .from('community_stats')
       .select('*')
       .single();
 
     if (error) {
-      // If view doesn't exist, return mock data
-      console.warn('Community stats view not available. Using default values.');
+      // If the view doesn't exist, calculate stats from the actual data tables
+      console.warn('Community stats view not available. Calculating from tables.');
+      
+      // Calculate active members from profiles
+      const { count: activeMembers, error: membersError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      
+      // Calculate acts shared from community_posts
+      const { count: actsShared, error: actsError } = await supabase
+        .from('community_posts')
+        .select('*', { count: 'exact', head: true });
+      
+      // Calculate total comments from post_comments
+      const { count: totalComments, error: commentsError } = await supabase
+        .from('post_comments')
+        .select('*', { count: 'exact', head: true });
+      
+      // Return calculated stats or defaults if there are errors
       return {
-        activeMembers: 1247,
-        actsShared: 15432,
-        totalComments: 3891,
+        activeMembers: activeMembers || 0,
+        actsShared: actsShared || 0,
+        totalComments: totalComments || 0,
+        // For badges earned, we'll return a default since there's no direct equivalent
         badgesEarned: 892
       };
     }
 
     return {
-      activeMembers: data.active_members || 0,
-      actsShared: data.acts_shared || 0,
-      totalComments: data.total_comments || 0,
-      badgesEarned: data.badges_earned || 0
+      activeMembers: data.active_members || data.activeMembers || 0,
+      actsShared: data.acts_shared || data.actsShared || 0,
+      totalComments: data.total_comments || data.totalComments || 0,
+      badgesEarned: data.badges_earned || data.badgesEarned || 0
     };
   } catch (error) {
     console.error('Error fetching community stats:', error);

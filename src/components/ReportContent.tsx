@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Flag, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from "@/components/ui/use-toast";
+import { reportPost, reportComment } from '@/lib/database';
 
 interface ReportContentProps {
   contentId: number;
@@ -41,14 +42,25 @@ export const ReportContent: React.FC<ReportContentProps> = ({
     setIsSubmitting(true);
 
     try {
-      // In a real app, this would submit to the database
-      // For now, we'll simulate the report submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      let success = false;
+      if (contentType === 'post') {
+        success = await reportPost(user.id, contentId, selectedReason, description);
+      } else {
+        success = await reportComment(user.id, contentId, selectedReason, description);
+      }
 
-      toast({
-        title: "Report submitted",
-        description: "Thank you for helping keep our community safe. We'll review this content.",
-      });
+      if (success) {
+        toast({
+          title: "Report submitted",
+          description: "Thank you for helping keep our community safe. We'll review this content.",
+        });
+      } else {
+        toast({
+          title: "Report submission failed",
+          description: "There was an issue submitting your report. Please try again.",
+          variant: "destructive",
+        });
+      }
 
       onClose();
     } catch (error) {
